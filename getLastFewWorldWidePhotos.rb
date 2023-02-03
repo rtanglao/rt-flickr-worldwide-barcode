@@ -48,7 +48,7 @@ BEGIN_TIME = Time.now.to_i - TEN_MINUTES_IN_SECONDS
 logger.debug "BEGIN: #{BEGIN_TIME.ai}"
 begin_mysql_time = Time.at(BEGIN_TIME).strftime('%Y-%m-%d %H:%M:%S')
 
-extras_str = 'description, date_upload, date_taken, owner_name, url_l'
+extras_str = 'date_upload,url_l'
 
 flickr_url = 'services/rest/'
 logger.debug "begin_mysql_time:#{begin_mysql_time}"
@@ -73,13 +73,13 @@ logger.debug "photos_per_page: #{photos_per_page}"
 
 logger.debug "STATUS from flickr API:#{photos_on_this_page['stat']} num_pages:\
   #{photos_on_this_page['photos']['pages'].to_i}"
+PARAMS_TO_KEEP = %w[id dateupload url_l height_l width_l]
 photos_on_this_page['photos']['photo'].each do |photo|
   logger.debug "photo from API: #{photo.ai}"
-  date_taken = Time.parse(photo['datetaken'])
-  logger.debug "date_taken:#{date_taken}"
+  dateupload = Time.at(photo['dateupload'].to_i)
+  logger.debug "dateupload:#{dateupload}"
   photo['id'] = photo['id'].to_i
-  photo['description_content'] = photo['description']['_content']
-  photo_without_nested_stuff = photo.except('description')
-  logger.debug "photo without nested stuff: #{photo_without_nested_stuff.ai}"
+  photo_without_unnecessary_stuff = photo.slice(*PARAMS_TO_KEEP)
+  logger.debug "photo without unnecesary stuff: #{photo_without_unnecessary_stuff.ai}"
   exit
 end
