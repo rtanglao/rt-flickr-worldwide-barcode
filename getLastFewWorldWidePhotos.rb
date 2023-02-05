@@ -104,14 +104,19 @@ localdd = localtime.strftime('%d').to_i
 startdate = tz.local_time(localyyyy, localmm, localdd, 0, 0).to_i
 photos.reject! { |p| p['dateupload'] < startdate }
 exit if photos.length.zero?
-# Create barcode/yyyy/mm/dd directory if it doesn't exist
+BARCODE_SLICE = '/tmp/resized.png'
 HEIGHT = 640
 WIDTH = 1
+# Create barcode/yyyy/mm/dd directory if it doesn't exist
 DIRECTORY = format(
   'barcode/%<yyyy>4.4d/%<mm>2.2d/%<dd>2.2d',
   yyyy: localyyyy, mm: localmm, dd: localdd
 )
 ID_FILEPATH = "#{DIRECTORY}/processed-ids.txt"
+BARCODE_FILEPATH = format(
+  '%<dir>s/%<yyyy>4.4d-%<mm>2.2d-%<dd>2.2d.png',
+  dir: DIRECTORY, yyyy: localyyyy, mm: localmm, dd: localdd
+)
 FileUtils.mkdir_p DIRECTORY
 processed_ids = []
 processed_ids = IO.readlines(ID_FILEPATH).map(&:to_i) if File.exist?(ID_FILEPATH)
@@ -123,17 +128,21 @@ photos.each do |photo|
   logger.debug "DOWNLOADING #{id}"
   # 604 height files shouldn't be more than 1 MB!!!
   tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
-  thumb = Image.read(tempfile.path)
-  resized = thumb.first.resize(WIDTH, HEIGHT)
-  resized.write('/tmp/resized.png')
-  binding.pry
+  thumb = Image.read(tempfile.path).first
+  resized = thumb.resize(WIDTH, HEIGHT)
+  resized.write(BARCODE_SLICE)
+  if !File.exist?(BARCODE_FILEPATH)
+    FileUtils.cp(BARCODE_SLICE, BARCODE_FILEPATH)
+  else  
+    todays_barcode = Image.read(BARCODE_FILEPATH).first
+    #  montage -geometry +0+0 -tile x1 $first1000  pmbarcode1000.png 
+    image_list = Magick::ImageList.new(BARCODE_FILEPATH, BARCODE_SLICE)
+    montaged_images = image_list.montage {|image| image.tile='2x1', image.geometry = '+0+0'}    
+    montaged_images.write(BARCODE_FILEPATH) 
+  end
   File.delete(tempfile.path)
-  binding.pry
   # After the thumbnail is downloaded,  add the id to the file and to the array 
   # so we don't download it again!
   File.open(ID_FILEPATH, 'a') { |f| f.write("#{id}\n") }
   processed_ids.push(id)
-  binding.pry
 end
-binding.pry
-sleep 200
