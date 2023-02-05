@@ -124,6 +124,8 @@ photos.each do |photo|
   tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
   binding.pry
   thumb = Image.read(tempfile.path)
+  resized = thumb.first.resize(1,640)
+  resized.write('/tmp/resized.png')
   binding.pry
   # After the thumbnail is downloaded,  add the id to the file and to the array 
   # so we don't download it again!
