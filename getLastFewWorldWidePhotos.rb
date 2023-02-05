@@ -105,6 +105,8 @@ startdate = tz.local_time(localyyyy, localmm, localdd, 0, 0).to_i
 photos.reject! { |p| p['dateupload'] < startdate }
 exit if photos.length.zero?
 # Create barcode/yyyy/mm/dd directory if it doesn't exist
+HEIGHT = 640
+WIDTH = 1
 DIRECTORY = format(
   'barcode/%<yyyy>4.4d/%<mm>2.2d/%<dd>2.2d',
   yyyy: localyyyy, mm: localmm, dd: localdd
@@ -117,15 +119,15 @@ photos.each do |photo|
   id = photo['id']
   next if processed_ids.include?(id)
 
-  binding.pry
-  # Download the thumbnail to DIRECTORY
+  # Download the thumbnail to /tmp
   logger.debug "DOWNLOADING #{id}"
   # 604 height files shouldn't be more than 1 MB!!!
   tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
-  binding.pry
   thumb = Image.read(tempfile.path)
-  resized = thumb.first.resize(1,640)
+  resized = thumb.first.resize(WIDTH, HEIGHT)
   resized.write('/tmp/resized.png')
+  binding.pry
+  File.delete(tempfile.path)
   binding.pry
   # After the thumbnail is downloaded,  add the id to the file and to the array 
   # so we don't download it again!
