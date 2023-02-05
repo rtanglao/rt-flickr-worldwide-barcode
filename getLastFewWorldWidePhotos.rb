@@ -5,10 +5,8 @@ require 'rubygems'
 require 'bundler/setup'
 require 'typhoeus'
 require 'amazing_print'
-require 'json'
 require 'time'
 require 'date'
-require 'csv'
 require 'logger'
 require 'io/console'
 require 'parseconfig'
@@ -16,7 +14,11 @@ require 'fileutils'
 require 'pry'
 require 'pry-byebug'
 require 'tzinfo'
-require 'fileutils'
+require 'down/http'
+require 'json'
+require 'rmagick'
+
+include Magick
 
 def get_flickr_response(url, params, _logger)
   url = "https://api.flickr.com/#{url}"
@@ -79,7 +81,7 @@ logger.debug "STATUS from flickr API:#{photos_on_this_page['stat']} num_pages:\
 PARAMS_TO_KEEP = %w[id dateupload url_l height_l width_l]
 photos = []
 photos_on_this_page['photos']['photo'].each do |photo|
-  #logger.debug "photo from API: #{photo.ai}"
+  # logger.debug "photo from API: #{photo.ai}"
   dateupload = Time.at(photo['dateupload'].to_i)
   logger.debug "dateupload:#{dateupload}"
   photo['id'] = photo['id'].to_i
@@ -87,12 +89,12 @@ photos_on_this_page['photos']['photo'].each do |photo|
   next if !photo.has_key?('height_l') || photo['height_l'] < 640 # Skip all photos that are less than 640px high.
 
   photo_without_unnecessary_stuff = photo.slice(*PARAMS_TO_KEEP)
-  logger.debug "photo without unneccesary stuff: #{photo_without_unnecessary_stuff.ai}"
+  logger.debug "photo without unnecessary stuff: #{photo_without_unnecessary_stuff.ai}"
   photos.push(photo_without_unnecessary_stuff)
 end
 photos.sort! { |a, b| a['dateupload'] <=> b['dateupload'] }
 # Get last photo and figure out the date for the Pacific timezone
-# and skip prior dates.
+# and skip prior dates (if there are any)
 last = photos[-1]
 tz = TZInfo::Timezone.get('America/Vancouver')
 localtime = tz.to_local(Time.at(last['dateupload']))
@@ -107,6 +109,27 @@ DIRECTORY = format(
   'barcode/%<yyyy>4.4d/%<mm>2.2d/%<dd>2.2d',
   yyyy: localyyyy, mm: localmm, dd: localdd
 )
+ID_FILEPATH = "#{DIRECTORY}/processed-ids.txt"
 FileUtils.mkdir_p DIRECTORY
+processed_ids = []
+processed_ids = IO.readlines(ID_FILEPATH).map(&:to_i) if File.exist?(ID_FILEPATH)
+photos.each do |photo|
+  id = photo['id']
+  next if processed_ids.include?(id)
+
+  binding.pry
+  # Download the thumbnail to DIRECTORY
+  logger.debug "DOWNLOADING #{id}"
+  # 604 height files shouldn't be more than 1 MB!!!
+  tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
+  binding.pry
+  thumb = Image.read(tempfile.path)
+  binding.pry
+  # After the thumbnail is downloaded,  add the id to the file and to the array 
+  # so we don't download it again!
+  File.open(ID_FILEPATH, 'a') { |f| f.write("#{id}\n") }
+  processed_ids.push(id)
+  binding.pry
+end
 binding.pry
 sleep 200
