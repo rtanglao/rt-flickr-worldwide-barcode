@@ -129,7 +129,14 @@ photos.each do |photo|
   # Download the thumbnail to /tmp
   logger.debug "DOWNLOADING #{id}"
   # 640 height files shouldn't be more than 1 MB!!!
-  tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
+  retry_count = 0
+  begin
+    tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
+  rescue Down::ClientError, Down::NotFound => e
+    retry_count += 1
+    retry if retry_count < 3
+    raise(e)
+  end
   thumb = Image.read(tempfile.path).first
   resized = thumb.resize(WIDTH, HEIGHT)
   resized.write(BARCODE_SLICE)
