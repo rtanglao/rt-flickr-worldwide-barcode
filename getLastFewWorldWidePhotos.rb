@@ -59,7 +59,7 @@ extras_str = 'date_upload,url_l'
 flickr_url = 'services/rest/'
 logger.debug "begin_mysql_time:#{begin_mysql_time}"
 
-NUM_PHOTOS_TO_DOWNLOAD = 20
+NUM_PHOTOS_TO_DOWNLOAD = 50
 
 url_params =
   {
