@@ -135,7 +135,7 @@ photos.each do |photo|
   rescue Down::ClientError, Down::NotFound => e
     retry_count += 1
     retry if retry_count < 3
-    raise(e)
+    next #raise(e) ie. skip the photo if we can't download it
   end
   thumb = Image.read(tempfile.path).first
   resized = thumb.resize(WIDTH, HEIGHT)
