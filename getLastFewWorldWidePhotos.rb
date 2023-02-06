@@ -129,7 +129,7 @@ photos.each do |photo|
 
   # Download the thumbnail to /tmp
   logger.debug "DOWNLOADING #{id}"
-  # 604 height files shouldn't be more than 1 MB!!!
+  # 640 height files shouldn't be more than 1 MB!!!
   tempfile = Down::Http.download(photo['url_l'], max_size: 1 * 1024 * 1024)
   thumb = Image.read(tempfile.path).first
   resized = thumb.resize(WIDTH, HEIGHT)
