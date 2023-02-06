@@ -70,7 +70,7 @@ url_params =
     format: 'json',
     nojsoncallback: '1',
     extras: extras_str,
-    sort: 'date-posted-asc',
+    sort: 'date-posted-desc',
     per_page: NUM_PHOTOS_TO_DOWNLOAD,
     page: 1,
     # Looks like unix time support is broken so use mysql time
