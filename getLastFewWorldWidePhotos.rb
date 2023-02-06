@@ -77,7 +77,6 @@ url_params =
     min_upload_date: begin_mysql_time
   }
 photos_on_this_page = get_flickr_response(flickr_url, url_params, logger)
-photos_per_page = photos_on_this_page['photos']['perpage'].to_i
 logger.debug "STATUS from flickr API:#{photos_on_this_page['stat']} num_pages:\
   #{photos_on_this_page['photos']['pages'].to_i}"
 PARAMS_TO_KEEP = %w[id dateupload url_l height_l width_l]
