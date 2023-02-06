@@ -59,6 +59,8 @@ extras_str = 'date_upload,url_l'
 flickr_url = 'services/rest/'
 logger.debug "begin_mysql_time:#{begin_mysql_time}"
 
+NUM_PHOTOS_TO_DOWNLOAD = 20
+
 url_params =
   {
     method: 'flickr.photos.search',
@@ -69,7 +71,7 @@ url_params =
     nojsoncallback: '1',
     extras: extras_str,
     sort: 'date-posted-asc',
-    per_page: 50,
+    per_page: NUM_PHOTOS_TO_DOWNLOAD,
     page: 1,
     # Looks like unix time support is broken so use mysql time
     min_upload_date: begin_mysql_time
@@ -113,7 +115,8 @@ DIRECTORY = format(
   yyyy: localyyyy, mm: localmm, dd: localdd
 )
 ID_FILEPATH = "#{DIRECTORY}/processed-ids.txt"
-BARCODE_FILEPATH = format(
+BARCODE_FILEPATH = 'barcode/barcode.png'
+DAILY_BARCODE_FILEPATH = format(
   '%<dir>s/%<yyyy>4.4d-%<mm>2.2d-%<dd>2.2d.png',
   dir: DIRECTORY, yyyy: localyyyy, mm: localmm, dd: localdd
 )
@@ -131,18 +134,19 @@ photos.each do |photo|
   thumb = Image.read(tempfile.path).first
   resized = thumb.resize(WIDTH, HEIGHT)
   resized.write(BARCODE_SLICE)
-  if !File.exist?(BARCODE_FILEPATH)
-    FileUtils.cp(BARCODE_SLICE, BARCODE_FILEPATH)
-  else  
-    todays_barcode = Image.read(BARCODE_FILEPATH).first
-    #  montage -geometry +0+0 -tile x1 $first1000  pmbarcode1000.png 
-    image_list = Magick::ImageList.new(BARCODE_FILEPATH, BARCODE_SLICE)
-    montaged_images = image_list.montage {|image| image.tile='2x1', image.geometry = '+0+0'}    
-    montaged_images.write(BARCODE_FILEPATH) 
+  if !File.exist?(DAILY_BARCODE_FILEPATH)
+    FileUtils.cp(BARCODE_SLICE, DAILY_BARCODE_FILEPATH)
+  else
+    todays_barcode = Image.read(DAILY_BARCODE_FILEPATH).first
+    #  montage -geometry +0+0 -tile x1 $first1000  pmbarcode1000.png
+    image_list = Magick::ImageList.new(DAILY_BARCODE_FILEPATH, BARCODE_SLICE)
+    montaged_images = image_list.montage { |image| image.tile = '2x1', image.geometry = '+0+0' }
+    montaged_images.write(DAILY_BARCODE_FILEPATH)
   end
   File.delete(tempfile.path)
-  # After the thumbnail is downloaded,  add the id to the file and to the array 
+  # After the thumbnail is downloaded,  add the id to the file and to the array
   # so we don't download it again!
   File.open(ID_FILEPATH, 'a') { |f| f.write("#{id}\n") }
   processed_ids.push(id)
+  FileUtils.cp(DAILY_BARCODE_FILEPATH, BARCODE_FILEPATH)
 end
