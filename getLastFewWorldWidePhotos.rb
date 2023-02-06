@@ -137,8 +137,6 @@ photos.each do |photo|
   if !File.exist?(DAILY_BARCODE_FILEPATH)
     FileUtils.cp(BARCODE_SLICE, DAILY_BARCODE_FILEPATH)
   else
-    todays_barcode = Image.read(DAILY_BARCODE_FILEPATH).first
-    #  montage -geometry +0+0 -tile x1 $first1000  pmbarcode1000.png
     image_list = Magick::ImageList.new(DAILY_BARCODE_FILEPATH, BARCODE_SLICE)
     montaged_images = image_list.montage { |image| image.tile = '2x1', image.geometry = '+0+0' }
     montaged_images.write(DAILY_BARCODE_FILEPATH)
