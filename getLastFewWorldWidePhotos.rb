@@ -122,6 +122,7 @@ DAILY_BARCODE_FILEPATH = format(
 FileUtils.mkdir_p DIRECTORY
 processed_ids = []
 processed_ids = IO.readlines(ID_FILEPATH).map(&:to_i) if File.exist?(ID_FILEPATH)
+check_daily_file_exists = true
 photos.each do |photo|
   id = photo['id']
   next if processed_ids.include?(id)
@@ -140,8 +141,9 @@ photos.each do |photo|
   thumb = Image.read(tempfile.path).first
   resized = thumb.resize(WIDTH, HEIGHT)
   resized.write(BARCODE_SLICE)
-  if !File.exist?(DAILY_BARCODE_FILEPATH)
+  if check_daily_file_exists && !File.exist?(DAILY_BARCODE_FILEPATH)
     FileUtils.cp(BARCODE_SLICE, DAILY_BARCODE_FILEPATH)
+    check_daily_file_exists = false
   else
     image_list = Magick::ImageList.new(DAILY_BARCODE_FILEPATH, BARCODE_SLICE)
     montaged_images = image_list.montage { |image| image.tile = '2x1', image.geometry = '+0+0' }
